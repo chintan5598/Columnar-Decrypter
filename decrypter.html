@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Columnar Transposition Decryptor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 100%;
+    }
+    #output {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h2>Columnar Transposition Decryptor</h2>
+  <p>Cipher from URL: <code id="cipherDisplay"></code></p>
+
+  <label for="keyInput">Enter Key (comma-separated numbers, e.g., 3,1,2):</label>
+  <input type="text" id="keyInput" placeholder="Enter key like 3,1,2" />
+
+  <button onclick="decrypt()">Decrypt</button>
+
+  <div id="output"></div>
+
+  <script>
+    // Get cipher text from URL parameter
+    function getCipherFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("cipher") || "";
+    }
+
+    // Decryption function
+    function columnarTranspositionDecrypt(cipherText, key) {
+      const numCols = key.length;
+      const numRows = Math.ceil(cipherText.length / numCols);
+
+      // Step 1: Calculate how many characters in each column
+      const colLengths = Array(numCols).fill(Math.floor(cipherText.length / numCols));
+      let extraChars = cipherText.length % numCols;
+      for (let i = 0; i < numCols; i++) {
+        if (extraChars > 0 && key.indexOf(i + 1) !== -1) {
+          colLengths[key.indexOf(i + 1)] += 1;
+          extraChars--;
+        }
+      }
+
+      // Step 2: Sort key and split cipherText into columns
+      let sortedKey = [...key].map(Number).sort((a, b) => a - b);
+      let cols = Array(numCols).fill("");
+      let start = 0;
+
+      for (let i = 0; i < numCols; i++) {
+        let index = key.indexOf(sortedKey[i]);
+        let len = colLengths[index];
+        cols[index] = cipherText.slice(start, start + len);
+        start += len;
+      }
+
+      // Step 3: Read row-wise
+      let plainText = "";
+      for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+          if (cols[col][row]) plainText += cols[col][row];
+        }
+      }
+
+      return plainText;
+    }
+
+    // On page load
+    const cipherText = getCipherFromURL();
+    document.getElementById("cipherDisplay").textContent = cipherText;
+
+    // Decrypt on button click
+    function decrypt() {
+      const keyInput = document.getElementById("keyInput").value.trim();
+      if (!keyInput) return alert("Please enter a key.");
+
+      const key = keyInput.split(",").map(k => parseInt(k.trim()));
+      if (key.some(isNaN)) return alert("Invalid key format. Use comma-separated numbers.");
+
+      const plainText = columnarTranspositionDecrypt(cipherText, key);
+      document.getElementById("output").textContent = "Decrypted Text:\n" + plainText;
+    }
+  </script>
+</body>
+</html>
